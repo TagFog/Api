@@ -1,0 +1,3 @@
+<mapper xmlns="com.example.word.mapper.DataMapper">
+    <select id=""></select>
+</mapper>

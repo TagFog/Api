@@ -1,11 +1,12 @@
-package com.example.word.entity;
+package com.example.word.service;
 
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
+import org.springframework.stereotype.Service;
 
 import java.util.List;
+@Service
 
-@TableName("JavaData")
 public class Filed {
 
     @TableField("COLUMN_NAME")
