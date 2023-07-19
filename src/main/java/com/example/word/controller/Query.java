@@ -7,9 +7,12 @@ import org.apache.poi.xwpf.usermodel.*;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.awt.*;
+import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.math.BigInteger;
@@ -25,23 +28,26 @@ public class Query {
     @Autowired
     private FieldMapper fieldMapper;
 
-    @GetMapping("/find")
-    public String query() throws IOException {
+    @PostMapping("/generate")
+    public String generate(@RequestParam("TableName") String TableName,
+                           @RequestParam("DataName") String DataName,
+                           @RequestParam("TitleName") String TitleName
+                           ) throws IOException {
 
-        List<Map<String,Object>> list = dataMapper.getAllTablesData();
 
-        String tableName = "data";
-        List<Filed> list1 = fieldMapper.getColumnNames(tableName);
+
+        List<Map<String,Object>> list = dataMapper.getAllTablesData(TableName,DataName);
+
+        List<Filed> list1 = fieldMapper.getColumnNames(TableName);
 
         // 创建一个新的Word文档
         XWPFDocument document = new XWPFDocument();
 
-        String titleName = "数据表";
         // 添加标题
         XWPFParagraph titleParagraph = document.createParagraph(); //创建标题
         titleParagraph.setAlignment(ParagraphAlignment.CENTER); //标题居中
         XWPFRun titleRun = titleParagraph.createRun();
-        titleRun.setText(titleName);
+        titleRun.setText(TitleName);
         titleRun.setBold(true);
         titleRun.setFontSize(14);
 
@@ -51,6 +57,7 @@ public class Query {
 
         // 创建一个表格
         XWPFTable table = document.createTable(rowCount + 1, title);
+
 
         CTTblPr tblPr = table.getCTTbl().addNewTblPr();
         tblPr.addNewJc().setVal(STJc.CENTER);
@@ -68,7 +75,6 @@ public class Query {
             ctShd.setFill("FFFF00"); // 设置为黄色
         }
 
-
         CTTblWidth tableWidth = tblPr.addNewTblW();
         tableWidth.setType(STTblWidth.DXA);
 //        生成表格的宽度
@@ -79,6 +85,15 @@ public class Query {
             Filed filed = list1.get(i);
             XWPFTableRow fileRow = table.getRow(0);
             fileRow.getCell(i).setText(filed.getColumnName());
+        }
+
+        // 设置表格内容居中对齐
+        for (XWPFTableRow row : table.getRows()) {
+            for (XWPFTableCell cell : row.getTableCells()) {
+                for (XWPFParagraph paragraph : cell.getParagraphs()) {
+                    paragraph.setAlignment(ParagraphAlignment.CENTER);
+                }
+            }
         }
 
         // 填充表头
@@ -95,9 +110,33 @@ public class Query {
             rowIndex++;
         }
 
+        String folderPath = "src\\template";
+        File folder = new File(folderPath);
+
+        String filePath = "src\\template\\out.docx";
+        File file = new File(filePath);
+
+        if (!folder.exists()){
+            // 文件夹不存在，创建文件夹
+            boolean createdFolder = folder.mkdirs();
+            if (createdFolder) {
+                System.out.println("文件夹已创建成功！");
+                if (!file.exists()){
+                    boolean createdFile = file.createNewFile();
+                    if (createdFile) {
+                        System.out.println("文件已创建成功！");
+                    } else {
+                        System.out.println("文件创建失败！");
+                    }
+                }
+            } else {
+                System.out.println("文件夹创建失败！");
+            }
+        }
+
 
         // 保存Word文档
-        FileOutputStream outputStream = new FileOutputStream("src\\template\\out.docx");
+        FileOutputStream outputStream = new FileOutputStream(filePath);
         document.write(outputStream);
         outputStream.close();
 
